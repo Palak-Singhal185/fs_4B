@@ -1,1 +1,63 @@
+const express = require('express');
+const app = express();
+app.use(express.json());
+
+let cards = [
+  { id: 1, suit: 'hearts', value: 'ace', collection: 'standard' },
+  { id: 2, suit: 'spades', value: 'king', collection: 'vintage' }
+];
+
+// compute next id based on the current max id so deletes don't cause duplicates
+function nextId() {
+  if (cards.length === 0) return 1;
+  return Math.max(...cards.map(c => c.id)) + 1;
+}
+
+app.get('/api/cards', (req, res) => {
+  res.json(cards);
+});
+
+app.get('/api/cards/:id', (req, res) => {
+  const card = cards.find(c => c.id === parseInt(req.params.id, 10));
+  if (!card) return res.status(404).json({ error: 'Card not found' });
+  res.json(card);
+});
+
+app.post('/api/cards', (req, res) => {
+  const { suit, value, collection } = req.body;
+  if (!suit || !value || !collection) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+  const newCard = {
+    id: nextId(),
+    suit,
+    value,
+    collection
+  };
+  cards.push(newCard);
+  res.status(201).json(newCard);
+});
+
+app.put('/api/cards/:id', (req, res) => {
+  const card = cards.find(c => c.id === parseInt(req.params.id, 10));
+  if (!card) return res.status(404).json({ error: 'Card not found' });
+
+  const { suit, value, collection } = req.body;
+  if (suit !== undefined) card.suit = suit;
+  if (value !== undefined) card.value = value;
+  if (collection !== undefined) card.collection = collection;
+
+  res.json(card);
+});
+
+app.delete('/api/cards/:id', (req, res) => {
+  const index = cards.findIndex(c => c.id === parseInt(req.params.id, 10));
+  if (index === -1) return res.status(404).json({ error: 'Card not found' });
+  cards.splice(index, 1);
+  res.status(204).send();
+});
+
+// server
+const PORT = 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
